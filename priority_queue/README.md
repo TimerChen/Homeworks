@@ -1,37 +1,21 @@
-Problem Statement
+# Priority_queue 开发笔记
 
-A priority queue is a container adaptor that provides constant time lookup of the largest (by default) element, at the expense of logarithmic insertion and extraction. In our homework, you should implement a class that can provide some of the akin methods.
+## 开发时遇到的问题
 
-ATTENTION: This is an extended task for advanced students.
-
-Specifically, your should fill the blanks in the following file:
-
-priority_queue.hpp
-And there are several files you may need to complete and debug your code:
-
-utility.hpp
-exceptions.hpp
-data.zip
-The name of the datasets and their corresponding ids are listed below:
-
-one, 1000ms, 1GB
-
-two, 1000ms, 1GB
-
-three, 1000ms, 1GB
-
-four, 1000ms, 1GB
-
-five, 1000ms, 1GB
-
-one.memcheck, 1000ms, 1GB
-
-two.memcheck, 3000ms, 1GB
-
-three.memcheck, 3000ms, 1GB
-
-four.memcheck, 1000ms, 1GB
-
-five.memcheck, 2000ms, 1GB
-
-NOTICE: the data in folder [DATA] may be different from the data in folder [DATA].memcheck.
+> * 无构造函数成员：
+>
+>		采用记录指针，在赋值时使用拷贝构造函数new
+>
+> * 自我赋值：
+>
+> 		判断一下如果是自己赋给自己直接 return *this;
+> * 语法问题：
+>
+> 	在class priority_queue 中定义 struct Node
+> 	
+> 	1 其成员函数的实现不能放在 class priority_queue中
+> 	
+>	2 自定义空指针null[1]如果使用template不能用static
+> 		
+> 		每一个priority_queue对象建立一个null指针，每一个Node开一个nflag记录一下自己的null指针。
+> 		每次访问时检查flag==null?，如果不相等说明是后merge过来的，进行修正即可
