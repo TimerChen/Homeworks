@@ -24,6 +24,9 @@ public:
  * Please complete them.
  */
 class index_out_of_bound : public exception {
+	/*
+	const std::string variant = "index_out_of_bound";
+	index_out_of_bound( const std::string &DETAIL = "" ):detail(DETAIL){}*/
 	/* __________________________ */
 };
 
