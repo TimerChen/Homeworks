@@ -12,6 +12,14 @@
 
 namespace sjtu {
 
+	template<class T>
+	void swap( T &a, T &b )
+	{ T c(a); a=b;b=c; }
+	template<class T>
+	T min(const T &a, const T &b){return a<b?a:b;}
+	template<class T>
+	T max(const T &a, const T &b){return a>b?a:b;}
+
 template<
 	class Key,
 	class T,
@@ -24,6 +32,23 @@ public:
 	 * You can use sjtu::map as value_type by typedef.
 	 */
 	typedef pair<const Key, T> value_type;
+private:
+	struct Node
+	{
+		Node(Node *Null=0);
+		Node(const Node &a);
+		value_type data;
+		int height;
+		Node *ch[2],*fa,*nflag;
+		void update()
+		{
+			if(this == nflag)return;
+			height = max(ch[0]->height,ch[1]->height)+1;
+
+		}
+		void count();
+	}null[1],*ROOT;
+public:
 	/**
 	 * see BidirectionalIterator at CppReference for help.
 	 *
@@ -79,7 +104,7 @@ public:
 		bool operator!=(const const_iterator &rhs) const {}
 
 		/**
-		 * for the support of it->first. 
+		 * for the support of it->first.
 		 * See <http://kelvinh.github.io/blog/2013/11/20/overloading-of-member-access-operator-dash-greater-than-symbol-in-cpp/> for help.
 		 */
 		value_type* operator->() const noexcept {}
@@ -103,15 +128,47 @@ public:
 			// And other methods in iterator.
 			// And other methods in iterator.
 	};
+private:
+	int SIZE;
+	void copy(Node *&ro,Node *cr)
+	{
+		if(cr == cr->nflag)return;
+		ro = new Node(cr);
+		*ro = Node(null);
+
+		copy(ro->ch[0],cr->ch[0]);
+		copy(ro->ch[1],cr->ch[1]);
+	}
+	void clear(Node *ro)
+	{
+
+	}
+public:
 	/**
 	 * TODO two constructors
 	 */
-	map() {}
-	map(const map &other) {}
+	map()
+	{
+		null[0] = Node();
+		ROOT = null;
+		SIZE=0;
+	}
+	map(const map &other)
+	{
+		SIZE = other.SIZE;
+		copy();
+	}
 	/**
 	 * TODO assignment operator
 	 */
-	map & operator=(const map &other) {}
+	map & operator=(const map &other)
+	{
+		if(&other == this) return this;
+		clear(ROOT);
+		copy();
+		SIZE=0;
+		return this;
+	}
 	/**
 	 * TODO Destructors
 	 */
@@ -126,7 +183,7 @@ public:
 	const T & at(const Key &key) const {}
 	/**
 	 * TODO
-	 * access specified element 
+	 * access specified element
 	 * Returns a reference to the value that is mapped to a key equivalent to key,
 	 *   performing an insertion if such key does not already exist.
 	 */
@@ -162,7 +219,7 @@ public:
 	/**
 	 * insert an element.
 	 * return a pair, the first of the pair is
-	 *   the iterator to the new element (or the element that prevented the insertion), 
+	 *   the iterator to the new element (or the element that prevented the insertion),
 	 *   the second one is true if insert successfully, or false.
 	 */
 	pair<iterator, bool> insert(const value_type &value) {}
@@ -173,9 +230,9 @@ public:
 	 */
 	void erase(iterator pos) {}
 	/**
-	 * Returns the number of elements with key 
+	 * Returns the number of elements with key
 	 *   that compares equivalent to the specified argument,
-	 *   which is either 1 or 0 
+	 *   which is either 1 or 0
 	 *     since this container does not allow duplicates.
 	 * The default method of check the equivalence is !(a < b || b > a)
 	 */
@@ -189,7 +246,18 @@ public:
 	iterator find(const Key &key) {}
 	const_iterator find(const Key &key) const {}
 };
-
+Node::Node(Node *Null)
+:nflag(Null)
+{
+	ch[0]=ch[1]=fa=Null;
+	if(nflag!=this)height = 0;
+	else height = -1;
+}
+Node::Node(const Node &a)
+:data(a.data)
+{
+	
+}
 }
 
 #endif
