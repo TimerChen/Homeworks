@@ -10,7 +10,28 @@
 #include "utility.hpp"
 #include "exceptions.hpp"
 
+
+
 namespace sjtu {
+
+	template<class T>
+	struct normal_ptr
+	{
+		T *ptr;
+		normal_ptr(T *Ptr = nullptr):ptr(Ptr){}
+		T& operator *()
+		{	return *ptr;	}
+		T* operator ->()
+		{	return ptr;		}
+		const T& operator *()const
+		{	return *ptr;	}
+		const T* operator ->()const
+		{	return ptr;		}
+		bool operator == (const normal_ptr &a){return ptr==a.ptr;}
+		bool operator != (const normal_ptr &a){return ptr!=a.ptr;}
+		int operator - (const normal_ptr &a){return ptr - a.ptr;}
+		void del(){delete ptr;ptr = nullptr;}
+	};
 
 	template<class T>
 	void swap( T &a, T &b )
@@ -35,18 +56,21 @@ public:
 private:
 	struct Node
 	{
-		Node(Node *Null=0);
+		Node(Node *Null=nullptr);
 		Node(const Node &a);
-		value_type data;
+		~Node()
+		{
+			if(normal_ptr!=nullptr)
+				normal_ptr.del();
+		}
+		normal_ptr<value_type> data;
 		int height;
 		Node *ch[2],*fa,*nflag;
 		void update()
 		{
 			if(this == nflag)return;
 			height = max(ch[0]->height,ch[1]->height)+1;
-
 		}
-		void count();
 	}null[1],*ROOT;
 public:
 	/**
@@ -130,18 +154,21 @@ public:
 	};
 private:
 	int SIZE;
-	void copy(Node *&ro,Node *cr)
+	void copy(Node *&ro,Node *cr,Node *Fa=null)
 	{
 		if(cr == cr->nflag)return;
 		ro = new Node(cr);
-		*ro = Node(null);
-
-		copy(ro->ch[0],cr->ch[0]);
-		copy(ro->ch[1],cr->ch[1]);
+		ro->nflag = null;
+		ro->fa = Fa;
+		copy(ro->ch[0],cr->ch[0],ro);
+		copy(ro->ch[1],cr->ch[1],ro);
 	}
-	void clear(Node *ro)
+	void clear(Node *&ro)
 	{
-
+		if(ro==null)return;
+		delete ro;ro=null;
+		clear(ro->ch[0]);
+		clear(ro->ch[1]);
 	}
 public:
 	/**
@@ -207,15 +234,18 @@ public:
 	 * checks whether the container is empty
 	 * return true if empty, otherwise false.
 	 */
-	bool empty() const {}
+	bool empty() const
+	{	return SIZE==0;	}
 	/**
 	 * returns the number of elements.
 	 */
-	size_t size() const {}
+	size_t size() const
+	{ return SIZE; }
 	/**
 	 * clears the contents
 	 */
-	void clear() {}
+	void clear()
+	{	clear(ROOT);SIZE = 0; }
 	/**
 	 * insert an element.
 	 * return a pair, the first of the pair is
@@ -249,14 +279,18 @@ public:
 Node::Node(Node *Null)
 :nflag(Null)
 {
+	data = nullptr;
 	ch[0]=ch[1]=fa=Null;
 	if(nflag!=this)height = 0;
 	else height = -1;
 }
+
 Node::Node(const Node &a)
-:data(a.data)
 {
-	
+	data = new value_type(*a.data);
+	ch[0]=a.ch[0];ch[1]=a.ch[1];
+	fa=a.fa;nflag=a.nflag;
+	height = a.height;
 }
 }
 
