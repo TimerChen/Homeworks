@@ -65,13 +65,15 @@ private:
 		}
 		normal_ptr<value_type> data;
 		int height;
-		Node *ch[2],*fa,*nflag;
+		Node *ch[2],*fa,*nflag,*near[2];
 		void update()
 		{
 			if(this == nflag)return;
 			height = max(ch[0]->height,ch[1]->height)+1;
 		}
-	}null[1],*ROOT;
+		short pl()
+		{ return ro==ro->fa->ch[1]; }
+	}null[1],*ROOT,*BEGIN,*END;
 public:
 	/**
 	 * see BidirectionalIterator at CppReference for help.
@@ -154,14 +156,16 @@ public:
 	};
 private:
 	int SIZE;
-	void copy(Node *&ro,Node *cr,Node *Fa=null)
+	Node* copy(Node *&ro,Node *cr,Node *Fa=null, Node *pre=null)
 	{
-		if(cr == cr->nflag)return;
+		if(cr == cr->nflag)return pre;
 		ro = new Node(cr);
 		ro->nflag = null;
 		ro->fa = Fa;
-		copy(ro->ch[0],cr->ch[0],ro);
-		copy(ro->ch[1],cr->ch[1],ro);
+		ro->near[0] = copy(ro->ch[0],cr->ch[0],ro,null);
+		if(ro->near[0]==null)BEGIN = ro;
+		else ro->next[0]->next=[1] = ro;
+		return copy(ro->ch[1],cr->ch[1],ro);
 	}
 	void clear(Node *&ro)
 	{
@@ -170,6 +174,38 @@ private:
 		clear(ro->ch[0]);
 		clear(ro->ch[1]);
 	}
+	/*
+	void rotate(Node *k){
+		Node *r = k->fa;if(k==null||r==null)return;
+		r->push();k->push();
+		int x = k->pl()^1;
+		r->ch[x^1] = k->ch[x];
+		r->ch[x^1]->fa = r;
+		if(r->fa!=null)r->fa->ch[r->pl()] = k;
+		else ROOT = k;
+		k->fa = r->fa;r->fa = k;
+		k->ch[x] = r;
+		r->count();k->count();
+	}
+	*/
+	void insert(Node *k)
+	{
+
+	}
+	void rotate(Node *k)
+	{
+		Node *r = k->fa;
+		if(k==null||r==null)return;
+		//r->push();k->push();
+		int x = (k->pl()^1);
+		r->ch[x^1] = k->ch[x];
+		r->ch[x^1]->fa = r;
+		if(r->fa==null)ROOT = k;
+		else r->fa->ch[r->pl()] = k;
+		k->fa = r->fa;r->fa = k;
+		k->ch[x] = r;
+		//r->count();k->count();
+	}
 public:
 	/**
 	 * TODO two constructors
@@ -177,13 +213,15 @@ public:
 	map()
 	{
 		null[0] = Node();
-		ROOT = null;
+		BEGIN = END = ROOT = null;
 		SIZE=0;
 	}
 	map(const map &other)
 	{
-		SIZE = other.SIZE;
-		copy();
+		null[0] = Node();
+		BEGIN = null;
+		END = copy(ROOT,other.ROOT);
+		SIZE=other.SIZE;
 	}
 	/**
 	 * TODO assignment operator
@@ -192,14 +230,15 @@ public:
 	{
 		if(&other == this) return this;
 		clear(ROOT);
-		copy();
-		SIZE=0;
+		BEGIN = null;
+		END = copy(ROOT,other.ROOT);
+		SIZE=other.SIZE;
 		return this;
 	}
 	/**
 	 * TODO Destructors
 	 */
-	~map() {}
+	~map() {clear(ROOT);}
 	/**
 	 * TODO
 	 * access specified element with bounds checking
@@ -280,7 +319,7 @@ Node::Node(Node *Null)
 :nflag(Null)
 {
 	data = nullptr;
-	ch[0]=ch[1]=fa=Null;
+	near[0]=near[1]=ch[0]=ch[1]=fa=Null;
 	if(nflag!=this)height = 0;
 	else height = -1;
 }
@@ -289,6 +328,7 @@ Node::Node(const Node &a)
 {
 	data = new value_type(*a.data);
 	ch[0]=a.ch[0];ch[1]=a.ch[1];
+	near[0]=a.near[0];near[1]=a.near[1];
 	fa=a.fa;nflag=a.nflag;
 	height = a.height;
 }
