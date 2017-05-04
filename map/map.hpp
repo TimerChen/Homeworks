@@ -13,7 +13,7 @@
 
 
 namespace sjtu {
-
+	/*
 	template<class T>
 	struct normal_ptr
 	{
@@ -32,7 +32,7 @@ namespace sjtu {
 		int operator - (const normal_ptr &a){return ptr - a.ptr;}
 		void del(){delete ptr;ptr = nullptr;}
 	};
-
+	*/
 	template<class T>
 	void swap( T &a, T &b )
 	{ T c(a); a=b;b=c; }
@@ -56,14 +56,11 @@ public:
 private:
 	struct Node
 	{
-		Node(Node *Null=nullptr);
+		Node(Node *Null);
 		Node(const Node &a);
 		~Node()
-		{
-			if(normal_ptr!=nullptr)
-				normal_ptr.del();
-		}
-		normal_ptr<value_type> data;
+		{ delete data; }
+		value_type *data;
 		int height;
 		Node *ch[2],*fa,*nflag,*near[2];
 		void update()
@@ -72,7 +69,7 @@ private:
 			height = max(ch[0]->height,ch[1]->height)+1;
 		}
 		short pl()
-		{ return ro==ro->fa->ch[1]; }
+		{ return this==fa->ch[1]; }
 	}null[1],*ROOT,*BEGIN,*END;
 public:
 	/**
@@ -84,88 +81,207 @@ public:
 	 */
 	class const_iterator;
 	class iterator {
-	private:
-		/**
-		 * TODO add data members
-		 *   just add whatever you want.
-		 */
-	public:
-		iterator() {
-			// TODO
-		}
-		iterator(const iterator &other) {
-			// TODO
-		}
-		/**
-		 * return a new iterator which pointer n-next elements
-		 *   even if there are not enough elements, just return the answer.
-		 * as well as operator-
-		 */
-		/**
-		 * TODO iter++
-		 */
-		iterator operator++(int) {}
-		/**
-		 * TODO ++iter
-		 */
-		iterator & operator++() {}
-		/**
-		 * TODO iter--
-		 */
-		iterator operator--(int) {}
-		/**
-		 * TODO --iter
-		 */
-		iterator & operator--() {}
-		/**
-		 * a operator to check whether two iterators are same (pointing to the same memory).
-		 */
-		value_type & operator*() const {}
-		bool operator==(const iterator &rhs) const {}
-		bool operator==(const const_iterator &rhs) const {}
-		/**
-		 * some other operator for iterator.
-		 */
-		bool operator!=(const iterator &rhs) const {}
-		bool operator!=(const const_iterator &rhs) const {}
+		friend class map;
+		private:
+			/**
+			 * TODO add data members
+			 *   just add whatever you want.
+			 */
+			map *ori;
+			Node *add;
+			iterator( map *Origin, Node *Address )
+				 { ori = Origin; add = Address; }
+		public:
+			iterator() {
+				// TODO
+				add = NULL;
+				ori = NULL;
+			}
+			iterator(const iterator &other) {
+				// TODO
+				ori = other.ori;
+				add = other.add;
+			}
+			/**
+			 * return a new iterator which pointer n-next elements
+			 *   even if there are not enough elements, just return the answer.
+			 * as well as operator-
+			 */
+			/**
+			 * TODO iter++
+			 */
+			iterator operator++(int)
+			{
+				if(add == ori.null)throw(index_out_of_bound());
+				iterator tmp(*this);
+				add = add->near[1];
+				return tmp;
+			}
+			/**
+			 * TODO ++iter
+			 */
+			iterator & operator++()
+			{
+				if(add == ori.null)throw(index_out_of_bound());
+				add = add->near[1];
+				return *this;
+			}
+			/**
+			 * TODO iter--
+			 */
+			iterator operator--(int)
+			{
+				if(add == ori->BEGIN)throw(index_out_of_bound());
+				iterator tmp(*this);
+				if(add == ori->null)add = ori->END;
+				else add = add->near[0];
+				return tmp;
+			}
+			/**
+			 * TODO --iter
+			 */
+			iterator & operator--()
+			{
+				if(add == ori->BEGIN)throw(index_out_of_bound());
+				if(add == ori->null)add = ori->END;
+				else add = add->near[0];
+				return *this;
+			}
+			/**
+			 * a operator to check whether two iterators are same (pointing to the same memory).
+			 */
+			value_type & operator*() const
+			{ return *(add->data); }
+			bool operator==(const iterator &rhs) const
+			{ return add == rhs.add; }
+			bool operator==(const const_iterator &rhs) const
+			{ return add == rhs.add; }
+			/**
+			 * some other operator for iterator.
+			 */
+			bool operator!=(const iterator &rhs) const
+			{ return add != rhs.add; }
+			bool operator!=(const const_iterator &rhs) const
+			{ return add != rhs.add; }
 
-		/**
-		 * for the support of it->first.
-		 * See <http://kelvinh.github.io/blog/2013/11/20/overloading-of-member-access-operator-dash-greater-than-symbol-in-cpp/> for help.
-		 */
-		value_type* operator->() const noexcept {}
-	};
+			/**
+			 * for the support of it->first.
+			 * See <http://kelvinh.github.io/blog/2013/11/20/overloading-of-member-access-operator-dash-greater-than-symbol-in-cpp/> for help.
+			 */
+			value_type* operator->() const noexcept
+			{ return add->data; }
+		};
 	class const_iterator {
 		// it should has similar member method as iterator.
 		//  and it should be able to construct from an iterator.
+		friend class map;
 		private:
 			// data members.
+			const map *ori;
+			const Node *add;
+			const_iterator( const map *Origin, const Node *Address )
+			:ori(Origin),add(Address){}
 		public:
-			const_iterator() {
+			const_iterator()
+			{
 				// TODO
+				ori = NULL;
+				add = NULL;
 			}
-			const_iterator(const const_iterator &other) {
+			const_iterator(const const_iterator &other)
+			{
 				// TODO
+				ori = other.ori;
+				add = other.add;
 			}
-			const_iterator(const iterator &other) {
+			const_iterator(const iterator &other)
+			{
 				// TODO
+				ori = other.ori;
+				add = other.add;
 			}
 			// And other methods in iterator.
 			// And other methods in iterator.
 			// And other methods in iterator.
+			/**
+			 * TODO iter++
+			 */
+			const_iterator operator++(int)
+			{
+				if(add == ori->null)throw(index_out_of_bound());
+				const_iterator tmp(*this);
+				add = add->near[1];
+				return tmp;
+			}
+			/**
+			 * TODO ++iter
+			 */
+			const_iterator & operator++()
+			{
+				if(add == ori.null)throw(index_out_of_bound());
+				add = add->near[1];
+				return *this;
+			}
+			/**
+			 * TODO iter--
+			 */
+			const_iterator operator--(int)
+			{
+				if(add == ori.BEGIN)throw(index_out_of_bound());
+				iterator tmp(*this);
+				if(add == ori.null)add = ori.END;
+				else add = add->near[0];
+				return tmp;
+			}
+			/**
+			 * TODO --iter
+			 */
+			const_iterator & operator--()
+			{
+				if(add == ori.BEGIN)throw(index_out_of_bound());
+				if(add == ori.null)add = ori.END;
+				else add = add->near[0];
+				return *this;
+			}
+			/**
+			 * a operator to check whether two iterators are same (pointing to the same memory).
+			 */
+			//const ???
+			const value_type & operator*() const
+			{ return *(add->data); }
+			bool operator ==(const iterator &rhs) const
+			{ return add == rhs.add; }
+			bool operator ==(const const_iterator &rhs) const
+			{ return add == rhs.add; }
+			/**
+			 * some other operator for iterator.
+			 */
+			bool operator!=(const iterator &rhs) const
+			{ return add != rhs.add; }
+			bool operator!=(const const_iterator &rhs) const
+			{ return add != rhs.add; }
+
+			/**
+			 * for the support of it->first.
+			 * See <http://kelvinh.github.io/blog/2013/11/20/overloading-of-member-access-operator-dash-greater-than-symbol-in-cpp/> for help.
+			 */
+			//const ???
+			const value_type* operator->() const noexcept
+			{ return add->data; }
 	};
 private:
 	int SIZE;
-	Node* copy(Node *&ro,Node *cr,Node *Fa=null, Node *pre=null)
+	//Node* copy(Node *&ro,Node *cr,Node *Fa=null, Node *pre=null)
+	Node* copy(Node *&ro,Node *cr,Node *Fa, Node *pre)
 	{
 		if(cr == cr->nflag)return pre;
 		ro = new Node(cr);
 		ro->nflag = null;
 		ro->fa = Fa;
-		ro->near[0] = copy(ro->ch[0],cr->ch[0],ro,null);
+		ro->near[0] = copy(ro->ch[0],cr->ch[0],ro,pre);
 		if(ro->near[0]==null)BEGIN = ro;
-		else ro->next[0]->next=[1] = ro;
-		return copy(ro->ch[1],cr->ch[1],ro);
+		else ro->near[0]->near[1] = ro;
+		return copy(ro->ch[1],cr->ch[1],ro,ro);
 	}
 	void clear(Node *&ro)
 	{
@@ -188,9 +304,133 @@ private:
 		r->count();k->count();
 	}
 	*/
-	void insert(Node *k)
+	Node *findit(const Key &val) const
 	{
+		Node *ro = ROOT;
+		while(ro!=null)
+		{
+			if( !Compare()(val, ro->data->first) && !Compare()(ro->data->first, val) )
+				return ro;
+			else if( Compare()(val, ro->data->first) )
+				ro = ro->ch[0];
+			else
+				ro = ro->ch[1];
+		}
+		return ro;
+	}
+	//void insert(const value_type &val, Node *&r = ROOT, Node *fa = null)
+	Node *insert(const value_type &val, Node *&r, Node *fa)
+	{
+		if( r == null )
+		{
+			r = new Node(null);
+			r->data = new value_type(val);
+			r->fa = fa;
+			if(fa == null)
+			{
+				BEGIN = END = r;
+			}else{
+				int x = r->pl();
+				r->near[x^1] = r->fa;
+				r->near[x] = r->fa->near[x];
+				r->fa->near[x] = r;
+				if(r->near[0] == null)BEGIN = r;
+				if(r->near[1] == null)END = r;
+			}
+			return r;
+		}else{
+			int x = Compare()(r->data->first, val.first);
+			Node *k = insert(val, r->ch[x], r);
+			if( r->ch[x]-r->ch[x^1] == 2)
+			{
+				if(Compare()(r->data->first, val.first) == x) rotate(r->ch[x]);
+				else krotate(r->ch[x]->ch[x^1]);
+			}
+			r->update();
+			return k;
+		}
+	}
+	void removeNode( Node *&k, Node *&r )
+	{
+		if(k->ch[0]!=null){
+			removeNode(k->ch[0],r);
+		}else{
+			Node *ro=r,*ko=k;
+			//k
+			k = k->ch[1];
+			k->fa = ko->fa;
+			//ko->fa->ch[ko->pl()] = k;
+			//r
+			r = ko;
+			r->fa = ro->fa;
+			//ro->fa->ch[ro->pl()] = r;
+			r->ch[0] = ro->ch[0];
+			r->ch[1] = ro->ch[1];
+			r->ch[0]->fa = r;
+			r->ch[1]->fa = r;
+			//near
+			//ro is not BEGIN
+			r->near[0] = ro->near[0];
+			r->near[0]->near[1] = r;
+			//delete
+			delete ro;
+		}
+		k->update();
+	}
+	//bool remove( const iterator &i, Node *&r = ROOT )
+	bool remove( const iterator &i, Node *&r)
+	{
+		short stop=0,x;
+		if(r == null) return 1;
+		else if( Compare()(i->first, r->data->first)){
+			stop = remove( i, r->ch[x=0] );
+		}else if( Compare()(r->data->first, i->first)){
+			stop = remove( i, r->ch[x=1]);
+		}else{
+			if(i!=iterator(this,r))throw(invalid_iterator());
+			if( r->ch[0]!=null && r->ch[1]!=null ){
+				removeNode(r->ch[1],r);
+			}else{
+				Node *k = r;
+				int x = (r->ch[0]==null);
+				r = r->ch[x];
+				if(r!=null)
+					r->fa = k->fa;
+				//k->fa->ch[k->pl()] = r;
 
+				if(BEGIN == k)
+					BEGIN = r;
+				else
+					k->near[0]->near[1] = k->near[1];
+				if(END == k)
+					END = r;
+				else
+					k->near[1]->near[0] = k->near[0];
+				delete k;
+			}
+		}
+		r->update();
+		if(stop) return true;
+
+		int ob = r->ch[x]->height - r->ch[x^1]->height + 1,nb;
+		if(ob == 0)return 1;
+		if(ob == 1)return 0;
+		if(ob == -1)
+		{
+			nb = r->ch[x^1]->ch[x]->height - r->ch[x^1]->ch[x^1]->height;
+			if(nb == 0)
+			{
+				rotate(r->ch[x^1]);
+				return 1;
+			}else if(nb == -1){
+				rotate(r->ch[x^1]);
+				return 0;
+			}else{
+				krotate(r->ch[x^1]->ch[x],2);
+				return 0;
+			}
+		}
+		throw(0);
 	}
 	void rotate(Node *k)
 	{
@@ -206,21 +446,27 @@ private:
 		k->ch[x] = r;
 		//r->count();k->count();
 	}
+	void krotate(Node *r,int k=2)
+	{
+		for(;k;--k)
+			rotate(r);
+	}
 public:
 	/**
 	 * TODO two constructors
 	 */
 	map()
+	:null({Node(null)})
 	{
-		null[0] = Node();
+		//null[0] = Node(null);
 		BEGIN = END = ROOT = null;
 		SIZE=0;
 	}
 	map(const map &other)
+	:null({Node(null)})
 	{
-		null[0] = Node();
 		BEGIN = null;
-		END = copy(ROOT,other.ROOT);
+		END = copy(ROOT,other.ROOT,null,null);
 		SIZE=other.SIZE;
 	}
 	/**
@@ -228,12 +474,12 @@ public:
 	 */
 	map & operator=(const map &other)
 	{
-		if(&other == this) return this;
+		if(&other == this) return *this;
 		clear(ROOT);
 		BEGIN = null;
-		END = copy(ROOT,other.ROOT);
+		END = copy(ROOT,other.ROOT,null,null);
 		SIZE=other.SIZE;
-		return this;
+		return *this;
 	}
 	/**
 	 * TODO Destructors
@@ -245,36 +491,52 @@ public:
 	 * Returns a reference to the mapped value of the element with key equivalent to key.
 	 * If no such element exists, an exception of type `index_out_of_bound'
 	 */
-	T & at(const Key &key) {}
-	const T & at(const Key &key) const {}
+	T & at(const Key &key)
+	{
+		Node *r = findit( key );
+		if(r == null)throw( index_out_of_bound() );
+		return (r->data)->second;
+	}
+	const T & at(const Key &key) const
+	{
+		Node *r = findit( key );
+		if(r == null)throw( index_out_of_bound() );
+		return (r->data)->second;
+	}
 	/**
 	 * TODO
 	 * access specified element
 	 * Returns a reference to the value that is mapped to a key equivalent to key,
 	 *   performing an insertion if such key does not already exist.
 	 */
-	T & operator[](const Key &key) {}
+	T & operator[](const Key &key)
+	{	return at(key);	}
 	/**
 	 * behave like at() throw index_out_of_bound if such key does not exist.
 	 */
-	const T & operator[](const Key &key) const {}
+	const T & operator[](const Key &key) const
+	{ return at(key); }
 	/**
 	 * return a iterator to the beginning
 	 */
-	iterator begin() {}
-	const_iterator cbegin() const {}
+	iterator begin()
+	{ return iterator(this,BEGIN); }
+	const_iterator cbegin() const
+	{ return const_iterator(this,BEGIN); }
 	/**
 	 * return a iterator to the end
 	 * in fact, it returns past-the-end.
 	 */
-	iterator end() {}
-	const_iterator cend() const {}
+	iterator end()
+	{ return iterator(this,null); }
+	const_iterator cend() const
+	{ return const_iterator(this,null); }
 	/**
 	 * checks whether the container is empty
 	 * return true if empty, otherwise false.
 	 */
 	bool empty() const
-	{	return SIZE==0;	}
+	{ return SIZE==0; }
 	/**
 	 * returns the number of elements.
 	 */
@@ -291,13 +553,39 @@ public:
 	 *   the iterator to the new element (or the element that prevented the insertion),
 	 *   the second one is true if insert successfully, or false.
 	 */
-	pair<iterator, bool> insert(const value_type &value) {}
+	pair<iterator, bool> insert(const value_type &value)
+	{
+		Node *r = findit( value.first );
+		pair<iterator, bool> re;
+		if(r!=null)
+		{
+			re.second = false;
+		}else{
+			r = insert(value, ROOT, null);
+			re.second = true;
+			SIZE++;
+		}
+		re.first = iterator(this,r);
+		return re;
+	}
 	/**
 	 * erase the element at pos.
 	 *
 	 * throw if pos pointed to a bad element (pos == this->end() || pos points an element out of this)
 	 */
-	void erase(iterator pos) {}
+	void erase(iterator pos)
+	{
+		if(pos.ori!=this || pos.add==null)
+		throw(invalid_iterator());
+		remove(pos,ROOT);
+		SIZE--;
+		if(SIZE == 0)
+		{
+			ROOT = BEGIN = END = null;
+		}
+		//if not find KEY also throw;
+
+	}
 	/**
 	 * Returns the number of elements with key
 	 *   that compares equivalent to the specified argument,
@@ -305,26 +593,45 @@ public:
 	 *     since this container does not allow duplicates.
 	 * The default method of check the equivalence is !(a < b || b > a)
 	 */
-	size_t count(const Key &key) const {}
+	size_t count(const Key &key) const
+	{ Node *r = findit(key); return size_t(r!=null); }
 	/**
 	 * Finds an element with key equivalent to key.
 	 * key value of the element to search for.
 	 * Iterator to an element with key equivalent to key.
 	 *   If no such element is found, past-the-end (see end()) iterator is returned.
 	 */
-	iterator find(const Key &key) {}
-	const_iterator find(const Key &key) const {}
+	iterator find(const Key &key)
+	{
+		Node *r = findit(key);
+		return iterator(this,r);
+	}
+	const_iterator find(const Key &key) const
+	{
+		Node *r = findit(key);
+		return const_iterator(this,r);
+	}
 };
-Node::Node(Node *Null)
+template<
+	class Key,
+	class T,
+	class Compare
+>
+map<Key,T,Compare>::Node::Node(Node *Null)
 :nflag(Null)
 {
-	data = nullptr;
+	data = NULL;
 	near[0]=near[1]=ch[0]=ch[1]=fa=Null;
 	if(nflag!=this)height = 0;
 	else height = -1;
 }
 
-Node::Node(const Node &a)
+template<
+	class Key,
+	class T,
+	class Compare
+>
+map<Key,T,Compare>::Node::Node(const Node &a)
 {
 	data = new value_type(*a.data);
 	ch[0]=a.ch[0];ch[1]=a.ch[1];
