@@ -10,7 +10,7 @@
 #include "utility.hpp"
 #include "exceptions.hpp"
 
-
+#include <iostream>
 
 namespace sjtu {
 	/*
@@ -44,8 +44,16 @@ namespace sjtu {
 template<
 	class Key,
 	class T,
+	class Compare
+>
+class Debuger_Map;
+
+template<
+	class Key,
+	class T,
 	class Compare = std::less<Key>
 > class map {
+	friend class Debuger_Map<Key,T,Compare>;
 public:
 	/**
 	 * the internal type of data.
@@ -59,7 +67,7 @@ private:
 		Node(Node *Null);
 		Node(const Node &a);
 		~Node()
-		{ delete data; }
+		{ if(data)delete data; }
 		value_type *data;
 		int height;
 		Node *ch[2],*fa,*nflag,*near[2];
@@ -112,7 +120,7 @@ public:
 			 */
 			iterator operator++(int)
 			{
-				if(add == ori.null)throw(index_out_of_bound());
+				if(add == ori->null)throw(index_out_of_bound());
 				iterator tmp(*this);
 				add = add->near[1];
 				return tmp;
@@ -122,7 +130,7 @@ public:
 			 */
 			iterator & operator++()
 			{
-				if(add == ori.null)throw(index_out_of_bound());
+				if(add == ori->null)throw(index_out_of_bound());
 				add = add->near[1];
 				return *this;
 			}
@@ -218,7 +226,7 @@ public:
 			 */
 			const_iterator & operator++()
 			{
-				if(add == ori.null)throw(index_out_of_bound());
+				if(add == ori->null)throw(index_out_of_bound());
 				add = add->near[1];
 				return *this;
 			}
@@ -227,9 +235,9 @@ public:
 			 */
 			const_iterator operator--(int)
 			{
-				if(add == ori.BEGIN)throw(index_out_of_bound());
-				iterator tmp(*this);
-				if(add == ori.null)add = ori.END;
+				if(add == ori->BEGIN)throw(index_out_of_bound());
+				const_iterator tmp(*this);
+				if(add == ori->null)add = ori->END;
 				else add = add->near[0];
 				return tmp;
 			}
@@ -238,8 +246,8 @@ public:
 			 */
 			const_iterator & operator--()
 			{
-				if(add == ori.BEGIN)throw(index_out_of_bound());
-				if(add == ori.null)add = ori.END;
+				if(add == ori->BEGIN)throw(index_out_of_bound());
+				if(add == ori->null)add = ori->END;
 				else add = add->near[0];
 				return *this;
 			}
@@ -274,8 +282,8 @@ private:
 	//Node* copy(Node *&ro,Node *cr,Node *Fa=null, Node *pre=null)
 	Node* copy(Node *&ro,Node *cr,Node *Fa, Node *pre)
 	{
-		if(cr == cr->nflag)return pre;
-		ro = new Node(cr);
+		if(cr == cr->nflag){ro=null;return pre;}
+		ro = new Node(*cr);
 		ro->nflag = null;
 		ro->fa = Fa;
 		ro->near[0] = copy(ro->ch[0],cr->ch[0],ro,pre);
@@ -286,9 +294,9 @@ private:
 	void clear(Node *&ro)
 	{
 		if(ro==null)return;
-		delete ro;ro=null;
 		clear(ro->ch[0]);
 		clear(ro->ch[1]);
+		delete ro;ro=null;
 	}
 	/*
 	void rotate(Node *k){
@@ -341,7 +349,7 @@ private:
 		}else{
 			int x = Compare()(r->data->first, val.first);
 			Node *k = insert(val, r->ch[x], r);
-			if( r->ch[x]-r->ch[x^1] == 2)
+			if( r->ch[x]->height - r->ch[x^1]->height == 2)
 			{
 				if(Compare()(r->data->first, val.first) == x) rotate(r->ch[x]);
 				else krotate(r->ch[x]->ch[x^1]);
@@ -350,68 +358,8 @@ private:
 			return k;
 		}
 	}
-	void removeNode( Node *&k, Node *&r )
+	short balanced(Node *r,short x)
 	{
-		if(k->ch[0]!=null){
-			removeNode(k->ch[0],r);
-		}else{
-			Node *ro=r,*ko=k;
-			//k
-			k = k->ch[1];
-			k->fa = ko->fa;
-			//ko->fa->ch[ko->pl()] = k;
-			//r
-			r = ko;
-			r->fa = ro->fa;
-			//ro->fa->ch[ro->pl()] = r;
-			r->ch[0] = ro->ch[0];
-			r->ch[1] = ro->ch[1];
-			r->ch[0]->fa = r;
-			r->ch[1]->fa = r;
-			//near
-			//ro is not BEGIN
-			r->near[0] = ro->near[0];
-			r->near[0]->near[1] = r;
-			//delete
-			delete ro;
-		}
-		k->update();
-	}
-	//bool remove( const iterator &i, Node *&r = ROOT )
-	bool remove( const iterator &i, Node *&r)
-	{
-		short stop=0,x;
-		if(r == null) return 1;
-		else if( Compare()(i->first, r->data->first)){
-			stop = remove( i, r->ch[x=0] );
-		}else if( Compare()(r->data->first, i->first)){
-			stop = remove( i, r->ch[x=1]);
-		}else{
-			if(i!=iterator(this,r))throw(invalid_iterator());
-			if( r->ch[0]!=null && r->ch[1]!=null ){
-				removeNode(r->ch[1],r);
-			}else{
-				Node *k = r;
-				int x = (r->ch[0]==null);
-				r = r->ch[x];
-				if(r!=null)
-					r->fa = k->fa;
-				//k->fa->ch[k->pl()] = r;
-
-				if(BEGIN == k)
-					BEGIN = r;
-				else
-					k->near[0]->near[1] = k->near[1];
-				if(END == k)
-					END = r;
-				else
-					k->near[1]->near[0] = k->near[0];
-				delete k;
-			}
-		}
-		r->update();
-		if(stop) return true;
-
 		int ob = r->ch[x]->height - r->ch[x^1]->height + 1,nb;
 		if(ob == 0)return 1;
 		if(ob == 1)return 0;
@@ -430,7 +378,82 @@ private:
 				return 0;
 			}
 		}
-		throw(0);
+		//throw(0);
+	}
+	bool removeNode( Node *&k, Node *&r )
+	{
+		bool stop = 0;
+		if(k->ch[0]!=null){
+			stop = removeNode(k->ch[0],r);
+		}else{
+			//ro will never be BEGIN or END
+			Node *ro=r,*ko=k;
+			//k
+			k = k->ch[1];
+			if(k!=null)
+			k->fa = ko->fa;
+			//ko->fa->ch[ko->pl()] = k;
+			//r
+			r = ko;
+			r->fa = ro->fa;
+			//ro->fa->ch[ro->pl()] = r;
+			r->ch[0] = ro->ch[0];
+			r->ch[1] = ro->ch[1];
+			if(r->ch[0]!=null)
+			r->ch[0]->fa = r;
+			if(r->ch[1]!=null)
+			r->ch[1]->fa = r;
+			//near
+			//ro is not BEGIN
+			r->near[0] = ro->near[0];
+			r->near[0]->near[1] = r;
+			//delete
+			delete ro;
+			return false;
+		}
+		k->update();
+		if(stop) return true;
+		return balanced(k,0);
+	}
+	//bool remove( const iterator &i, Node *&r = ROOT )
+	bool remove( const iterator &i, Node *&r)
+	{
+		short stop=0,x;
+		if(r == null) return 1;
+		else if( Compare()(i->first, r->data->first)){
+			stop = remove( i, r->ch[x=0] );
+		}else if( Compare()(r->data->first, i->first)){
+			stop = remove( i, r->ch[x=1]);
+		}else{
+			if(i!=iterator(this,r))throw(invalid_iterator());
+			if( r->ch[0]!=null && r->ch[1]!=null ){
+				stop = removeNode(r->ch[x=1],r);
+			}else{
+				Node *k = r;
+				x = (r->ch[0]==null);
+				r = r->ch[x];
+				if(r!=null)
+					r->fa = k->fa;
+				//k->fa->ch[k->pl()] = r;
+
+				if(BEGIN == k)
+					BEGIN = k->near[1];
+				else
+					k->near[0]->near[1] = k->near[1];
+				if(END == k)
+					END = k->near[0];
+				else
+					k->near[1]->near[0] = k->near[0];
+				delete k;
+				r->update();
+				return false;
+			}
+		}
+		r->update();
+		if(stop) return true;
+
+		//maintain balance
+		return balanced(r,x);
 	}
 	void rotate(Node *k)
 	{
@@ -444,7 +467,7 @@ private:
 		else r->fa->ch[r->pl()] = k;
 		k->fa = r->fa;r->fa = k;
 		k->ch[x] = r;
-		//r->count();k->count();
+		r->update();k->update();
 	}
 	void krotate(Node *r,int k=2)
 	{
@@ -465,8 +488,9 @@ public:
 	map(const map &other)
 	:null({Node(null)})
 	{
-		BEGIN = null;
+		ROOT = BEGIN = null;
 		END = copy(ROOT,other.ROOT,null,null);
+		END->near[1] = null;
 		SIZE=other.SIZE;
 	}
 	/**
@@ -478,6 +502,7 @@ public:
 		clear(ROOT);
 		BEGIN = null;
 		END = copy(ROOT,other.ROOT,null,null);
+		END->near[1] = null;
 		SIZE=other.SIZE;
 		return *this;
 	}
@@ -510,7 +535,15 @@ public:
 	 *   performing an insertion if such key does not already exist.
 	 */
 	T & operator[](const Key &key)
-	{	return at(key);	}
+	{
+		Node *r = findit( key );
+		if(r == null)
+		{
+			r = insert(value_type(key,T()), ROOT,null);
+			SIZE++;
+		}
+		return (r->data)->second;
+	}
 	/**
 	 * behave like at() throw index_out_of_bound if such key does not exist.
 	 */
@@ -546,7 +579,7 @@ public:
 	 * clears the contents
 	 */
 	void clear()
-	{	clear(ROOT);SIZE = 0; }
+	{	clear(ROOT);SIZE = 0;BEGIN=END=null; }
 	/**
 	 * insert an element.
 	 * return a pair, the first of the pair is
@@ -634,11 +667,47 @@ template<
 map<Key,T,Compare>::Node::Node(const Node &a)
 {
 	data = new value_type(*a.data);
+	//????
+	/*
 	ch[0]=a.ch[0];ch[1]=a.ch[1];
 	near[0]=a.near[0];near[1]=a.near[1];
-	fa=a.fa;nflag=a.nflag;
+	fa=a.fa;nflag=a.nflag;*/
+	ch[0]=ch[1]=near[0]=near[1]=fa=nflag=NULL;
 	height = a.height;
 }
+
+
+template<
+	class Key,
+	class T,
+	class Compare
+>
+class Debuger_Map
+{
+private:
+	typedef map<Key,T,Compare> dmap;
+	dmap *ptr;
+public:
+	Debuger_Map(const dmap &Map)
+	:ptr(&Map){}
+	void print()
+	{
+		print(ptr->ROOT);
+	}
+	void print(typename dmap::Node *ro)
+	{
+		using namespace std;
+		if(ro==ptr->null)return;
+		cout <<'{' <<'\n';
+		cout << ro->data->first << " " << ro->data->second << '\n';
+		cout << "ch[0]:\n";
+		print(ro->ch[0]);
+		cout << "ch[1]:\n";
+		print(ro->ch[1]);
+		cout <<'}';
+	}
+};
+
 }
 
 #endif
