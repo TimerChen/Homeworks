@@ -342,6 +342,8 @@ private:
 				r->near[x^1] = r->fa;
 				r->near[x] = r->fa->near[x];
 				r->fa->near[x] = r;
+				if(r->near[x]!=null)
+					r->near[x]->near[x^1] = r;
 				if(r->near[0] == null)BEGIN = r;
 				if(r->near[1] == null)END = r;
 			}
@@ -351,7 +353,7 @@ private:
 			Node *k = insert(val, r->ch[x], r);
 			if( r->ch[x]->height - r->ch[x^1]->height == 2)
 			{
-				if(Compare()(r->data->first, val.first) == x) rotate(r->ch[x]);
+				if(Compare()(r->ch[x]->data->first, val.first) == x) rotate(r->ch[x]);
 				else krotate(r->ch[x]->ch[x^1]);
 			}
 			r->update();
@@ -378,7 +380,7 @@ private:
 				return 0;
 			}
 		}
-		//throw(0);
+		throw(0);
 	}
 	bool removeNode( Node *&k, Node *&r )
 	{
