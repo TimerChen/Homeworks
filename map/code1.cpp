@@ -7,7 +7,7 @@ class Integer {
 public:
 	static int counter;
 	int val;
-
+	
 	Integer(int val) : val(val) {
 		counter++;
 	}
@@ -41,7 +41,7 @@ void tester(void) {
 	//	test: empty(), size()
 	assert(map.empty() && map.size() == 0);
 	//	test: operator[], insert()
-	for (int i = 0; i < 100000; ++i) {
+	for (int i = 0; i < 10000; ++i) {
 		std::string string = "";
 		for (int number = i; number; number /= 10) {
 			char digit = '0' + number % 10;
@@ -57,10 +57,8 @@ void tester(void) {
 		}
 	}
 	//	test: count(), find(), erase()
-	//return ;
-	for (int i = 0; i < 100000; ++i) {
+	for (int i = 0; i < 10000; ++i) {
 		if (i > 1896 && i <= 2016) {
-			//return;
 			continue;
 		}
 		assert(map.count(Integer(i)) == 1);
@@ -109,7 +107,7 @@ void tester(void) {
 	}
 	assert(map.empty() && map.size() == 0);
 	//	test: operator[]
-	for (int i = 0; i < 100000; ++i) {
+	for (int i = 0; i < 10000; ++i) {
 		std::cout << map[Integer(i)];
 	}
 	std::cout << map.size() << std::endl;

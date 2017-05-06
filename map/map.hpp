@@ -41,19 +41,20 @@ namespace sjtu {
 	template<class T>
 	T max(const T &a, const T &b){return a>b?a:b;}
 
+/*
 template<
 	class Key,
 	class T,
 	class Compare
 >
-class Debuger_Map;
+class Debuger_Map;*/
 
 template<
 	class Key,
 	class T,
 	class Compare = std::less<Key>
 > class map {
-	friend class Debuger_Map<Key,T,Compare>;
+	//friend class Debuger_Map<Key,T,Compare>;
 public:
 	/**
 	 * the internal type of data.
@@ -67,7 +68,10 @@ private:
 		Node(Node *Null);
 		Node(const Node &a);
 		~Node()
-		{ if(data)delete data; }
+		{
+			if(data)
+				delete data;
+		}
 		value_type *data;
 		int height;
 		Node *ch[2],*fa,*nflag,*near[2];
@@ -284,6 +288,7 @@ private:
 	{
 		if(cr == cr->nflag){ro=null;return pre;}
 		ro = new Node(*cr);
+		//printf("new%d\n",ro);
 		ro->nflag = null;
 		ro->fa = Fa;
 		ro->near[0] = copy(ro->ch[0],cr->ch[0],ro,pre);
@@ -296,6 +301,7 @@ private:
 		if(ro==null)return;
 		clear(ro->ch[0]);
 		clear(ro->ch[1]);
+		//printf("delete ro:%d\n",ro);
 		delete ro;ro=null;
 	}
 	/*
@@ -333,6 +339,8 @@ private:
 		{
 			r = new Node(null);
 			r->data = new value_type(val);
+			//printf("new r%d\n",r);
+			//printf("new r->data%d\n",r->data);
 			r->fa = fa;
 			if(fa == null)
 			{
@@ -389,16 +397,18 @@ private:
 			stop = removeNode(k->ch[0],r);
 		}else{
 			//ro will never be BEGIN or END
+
 			Node *ro=r,*ko=k;
 			//k
+			//k = null;
 			k = k->ch[1];
+			//ko = k->ch[1];
 			if(k!=null)
 			k->fa = ko->fa;
-			//ko->fa->ch[ko->pl()] = k;
 			//r
+
 			r = ko;
 			r->fa = ro->fa;
-			//ro->fa->ch[ro->pl()] = r;
 			r->ch[0] = ro->ch[0];
 			r->ch[1] = ro->ch[1];
 			if(r->ch[0]!=null)
@@ -409,8 +419,8 @@ private:
 			//ro is not BEGIN
 			r->near[0] = ro->near[0];
 			r->near[0]->near[1] = r;
-			//delete
-			delete ro;
+			//NEVER DELETE HERE!!!!!!!!!!!!!!!!!
+			//delete ro;
 			return false;
 		}
 		k->update();
@@ -421,6 +431,7 @@ private:
 	bool remove( const iterator &i, Node *&r)
 	{
 		short stop=0,x;
+		if(i.add == null)throw(invalid_iterator());
 		if(r == null) return 1;
 		else if( Compare()(i->first, r->data->first)){
 			stop = remove( i, r->ch[x=0] );
@@ -429,7 +440,10 @@ private:
 		}else{
 			if(i!=iterator(this,r))throw(invalid_iterator());
 			if( r->ch[0]!=null && r->ch[1]!=null ){
+				Node *k = r;
 				stop = removeNode(r->ch[x=1],r);
+				//DELETE HERE!!!!!!
+				delete k;
 			}else{
 				Node *k = r;
 				x = (r->ch[0]==null);
@@ -446,6 +460,8 @@ private:
 					END = k->near[0];
 				else
 					k->near[1]->near[0] = k->near[0];
+
+				//printf("delete k:%d\n",k);
 				delete k;
 				r->update();
 				return false;
@@ -646,6 +662,30 @@ public:
 		Node *r = findit(key);
 		return const_iterator(this,r);
 	}
+	/*
+	void debug_p(Node *r)
+	{
+		using namespace std;
+		if(r==null)return;
+		cout << "{" << endl;
+		cout << "Address: " << r <<endl;
+		cout << "DataAddress: " << r->data <<endl;
+		cout << "ch[0]:\n";
+		debug_p(r->ch[0]);
+		cout << "ch[1]:\n";
+		debug_p(r->ch[1]);
+
+		cout << "}" << endl;
+	}
+	void debug_p()
+	{
+
+		std::cout << "this:" << this << std::endl;
+		std::cout << "null:" << &null[0] << std::endl;
+		debug_p(ROOT);
+	}
+	*/
+
 };
 template<
 	class Key,
@@ -669,46 +709,9 @@ template<
 map<Key,T,Compare>::Node::Node(const Node &a)
 {
 	data = new value_type(*a.data);
-	//????
-	/*
-	ch[0]=a.ch[0];ch[1]=a.ch[1];
-	near[0]=a.near[0];near[1]=a.near[1];
-	fa=a.fa;nflag=a.nflag;*/
 	ch[0]=ch[1]=near[0]=near[1]=fa=nflag=NULL;
 	height = a.height;
 }
-
-
-template<
-	class Key,
-	class T,
-	class Compare
->
-class Debuger_Map
-{
-private:
-	typedef map<Key,T,Compare> dmap;
-	dmap *ptr;
-public:
-	Debuger_Map(const dmap &Map)
-	:ptr(&Map){}
-	void print()
-	{
-		print(ptr->ROOT);
-	}
-	void print(typename dmap::Node *ro)
-	{
-		using namespace std;
-		if(ro==ptr->null)return;
-		cout <<'{' <<'\n';
-		cout << ro->data->first << " " << ro->data->second << '\n';
-		cout << "ch[0]:\n";
-		print(ro->ch[0]);
-		cout << "ch[1]:\n";
-		print(ro->ch[1]);
-		cout <<'}';
-	}
-};
 
 }
 
