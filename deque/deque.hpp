@@ -10,6 +10,14 @@
 
 namespace sjtu {
 
+	template<class T>
+	void swap( T &a, T &b )
+	{ T c(a); a=b;b=c; }
+	template<class T>
+	T min(const T &a, const T &b){return a<b?a:b;}
+	template<class T>
+	T max(const T &a, const T &b){return a>b?a:b;}
+
 template<class T>
 class list
 {
@@ -19,17 +27,19 @@ class list
 	struct Node
 	{
 		Node();
+		Node(const Node&);
 		~Node(){if(data)delete data;}
 		T *data;int extra;
 		Node *pre,*next;
-	},*&BEGIN,END[1];
-	int SIZE;
-	void clear(Node *l = BEGIN)
+	}*&BEGIN,END[1];
+	size_t SIZE;
+	void clear(Node *l)
 	{
 		SIZE=0;
-		for(;l!=data.END;l=l->next)
+		for(;l!=END;l=l->next)
 			delete l;
 	}
+	void clear(){clear(BEGIN);}
 	Node *insert(Node *l, const T &val)
 	{
 		SIZE++;
@@ -41,7 +51,7 @@ class list
 	}
 	void remove(Node *l)
 	{
-		if(l == end) throw(invalid_iterator());
+		if(l == END) throw(invalid_iterator());
 		SIZE--;
 		l->next->pre = l->pre;
 		l->pre->next = l->next;
@@ -49,18 +59,18 @@ class list
 	}
 public:
 	list():BEGIN(END->next)
-	{END[0]->extra = -1;SIZE=0;}
-	~list(){data.clear();blocks.clear();}
+	{END[0].extra = -1;SIZE=0;}
+	~list(){clear();}
 };
 template<class T>
-list<T>::Node()
+list<T>::Node::Node()
 {
 	pre=next=this;
 	extra = 0;
 	data = NULL;
 }
 template<class T>
-list<T>::Node(const Node &other)
+list<T>::Node::Node(const Node &other)
 {
 	pre=next=this;
 	extra = other.extra;
@@ -83,10 +93,11 @@ class deque {
 		if(sqn < 10) sqn = 10;
 		if( history < sqn )
 			return;
+		short ok = 1;
 		for(BNode *l = blocks.BEGIN;l!=blocks.END && opn < sqn;)
 		if( l->extra > 2*sqn ){//split
 			if(opn+sqn > sqn)
-				{l=l->next;continue;}
+				{l=l->next;ok=0;continue;}
 			opn += sqn;
 			int cot = l->extra/2;
 			BNode *br = blocks.insert(l->pre, NULL);
@@ -98,8 +109,8 @@ class deque {
 			l = l->next;
 		}else if( l->next != blocks.END && l->extra + l->next->extra <= sqn ){//merge
 			int cot = min(l->extra,l->next->extra);
-			if( opt + cot > sqn )
-				{l=l->next;continue;}
+			if( opn + cot > sqn )
+				{l=l->next;ok=0;continue;}
 			opn += cot;
 			if( l->extra < l->next->extra )
 			{
@@ -116,6 +127,8 @@ class deque {
 				blocks.remove(l->next);
 			}
 		}else l=l->next;
+
+		if(ok)history = 0;
 	}
 	Node *insert( Node *r, const T &val )
 	{
@@ -123,11 +136,11 @@ class deque {
 		if(r->data==NULL)
 		{
 			r = data.insert(r->pre, Data(val, blocks.BEGIN));
-			blocks.BEGIN->data = r;
+			*(blocks.BEGIN->data) = r;
 			blocks.BEGIN->extra = 1;
 		}else
 		{
-			((*BNode)(r->data->second))->extra++;
+			((BNode*)(r->data->second))->extra++;
 			r = data.insert(r->pre, Data(val, r->data->second));
 		}
 		balanced();
@@ -135,7 +148,7 @@ class deque {
 	}
 	Node *remove( Node *r )
 	{
-		BNode *br = (*BNode)(r->data->second);
+		BNode *br = (BNode*)(r->data->second);
 		history++;
 		if((--br->extra) == 0)
 			br->data = NULL;
@@ -144,11 +157,11 @@ class deque {
 		balanced();
 		return r;
 	}
-	size_t index( Node *r )
+	size_t index( const Node *r ) const
 	{
-		int cot=0,cot2=0;
-		BNode *br = (*BNode)(r->data->second);
-		while(br->data != r)
+		int cot=0;
+		BNode *br = (BNode*)(r->data->second);
+		while(*(br->data) != r)
 			r=r->pre,cot++;
 		br = br->pre;
 		for(;br!=blocks.END;br=br->pre)
@@ -158,7 +171,7 @@ class deque {
 	Node *move( Node *r, int step )
 	{
 		if(!step)return r;
-		BNode *br = (*BNode)(r->data->second);
+		BNode *br = (BNode*)(r->data->second);
 		void *vr = r->data->second;
 		if(step > 0)
 		{
@@ -171,7 +184,7 @@ class deque {
 				step -= br->extra;
 				br = br->next;
 			}
-			for(r=br->start;step; --step)
+			for(r=*(br->data);step; --step)
 				r = r->next;
 		}else{
 			for(; step && vr == r->data->second; --step)
@@ -182,11 +195,53 @@ class deque {
 				step -= br->extra;
 				br = br->pre;
 			}
-			for(r=br->next->start->pre;step; --step)
+			//why
+			//for(r = br->next->data->pre;step; --step)
+			//compile failed?
+			r = *(br->next->data);
+			for(r = r->pre;step; --step)
 				r = r->pre;
 		}
 		return r;
 	}
+
+	const Node *move( const Node *r, int step ) const
+	{
+		if(!step)return r;
+		BNode *br = (BNode*)(r->data->second);
+		void *vr = r->data->second;
+		if(step > 0)
+		{
+			//END's data == NULL ?
+			for(; step && vr == r->data->second; --step)
+				r = r->next;
+			br = br->next;
+			while( step >= br->extra )
+			{
+				step -= br->extra;
+				br = br->next;
+			}
+			for(r=*(br->data);step; --step)
+				r = r->next;
+		}else{
+			for(; step && vr == r->data->second; --step)
+				r = r->pre;
+			br = br->pre;
+			while( step >= br->extra )
+			{
+				step -= br->extra;
+				br = br->pre;
+			}
+			//why
+			//for(r = br->next->data->pre;step; --step)
+			//compile failed?
+			r = *(br->next->data);
+			for(r = r->pre;step; --step)
+				r = r->pre;
+		}
+		return r;
+	}
+
 	void copy( Node *er )
 	{
 		BNode *br = blocks.BEGIN;
@@ -199,7 +254,7 @@ class deque {
 				br = blocks.insert( br, NULL );
 				br->extra = ((BNode*)(vr))->extra;
 			}
-			r = insert( END, er->data );
+			r = insert( data.END, er->data->first );
 			if(er->data->second != vr)
 			{
 				r->data->second = br;
@@ -210,6 +265,7 @@ class deque {
 public:
 	class const_iterator;
 	class iterator {
+		friend class deque;
 	private:
 		/**
 		 * TODO add data members
@@ -237,27 +293,27 @@ public:
 		 */
 		iterator operator+(const int &n) const {
 			//TODO
-			return move(add,+n);
+			return iterator(ori, ori->move(add,+n));
 		}
 		iterator operator-(const int &n) const {
 			//TODO
-			return move(add,-n);
+			return iterator(ori, ori->move(add,-n));
 		}
 		// return th distance between two iterator,
 		// if these two iterators points to different vectors, throw invaild_iterator.
 		int operator-(const iterator &rhs) const {
 			//TODO
 			if(ori != rhs.ori) throw( invalid_iterator() );
-			return index(add) - index(rhs.add);
+			return ori->index(add) - ori->index(rhs.add);
 		}
 		iterator operator+=(const int &n) {
 			//TODO
-			add = move(add, +n);
+			add = ori->move(add, +n);
 			return *this;
 		}
 		iterator operator-=(const int &n) {
 			//TODO
-			add = move(add, -n);
+			add = ori->move(add, -n);
 			return *this;
 		}
 		/**
@@ -265,7 +321,7 @@ public:
 		 */
 		iterator operator++(int)
 		{
-			if(add == data.END)throw(index_out_of_bound());
+			if(add == ori->data.END)throw(index_out_of_bound());
 			iterator re(*this);
 			add = add->next;
 			return re;
@@ -275,7 +331,7 @@ public:
 		 */
 		iterator& operator++()
 		{
-			if(add == data.END)throw(index_out_of_bound());
+			if(add == ori->data.END)throw(index_out_of_bound());
 			add = add->next;
 			return *this;
 		}
@@ -284,7 +340,7 @@ public:
 		 */
 		iterator operator--(int)
 		{
-			if(add == data.BEGIN)throw(index_out_of_bound());
+			if(add == ori->data.BEGIN)throw(index_out_of_bound());
 			iterator re(*this);
 			add = add->pre;
 			return re;
@@ -294,7 +350,7 @@ public:
 		 */
 		iterator& operator--()
 		{
-			if(add == data.BEGIN)throw(index_out_of_bound());
+			if(add == ori->data.BEGIN)throw(index_out_of_bound());
 			add = add->pre;
 			return *this;
 		}
@@ -326,114 +382,115 @@ public:
 	class const_iterator {
 		// it should has similar member method as iterator.
 		//  and it should be able to construct from an iterator.
-		private:
-			// data members.
-			const map* ori;
-			const Node *add;
-			const_iterator( const map* Origin, const Node *Address )
-			:ori(Origin),add(Address)
-		public:
-			const_iterator()
-			:ori(NULL),add(NULL){}
-			const_iterator(const const_iterator &other)
-			:ori(other.ori),add(other.add){}
-			const_iterator(const iterator &other)
-			:ori(other.ori),add(other.add){}
-			// And other methods in iterator.
-			// And other methods in iterator.
-			// And other methods in iterator.
-			/**
-			 * return a new iterator which pointer n-next elements
-			 *   even if there are not enough elements, the behaviour is **undefined**.
-			 * as well as operator-
-			 */
-			iterator operator+(const int &n) const {
-				//TODO
-				return move(add,n);
-			}
-			iterator operator-(const int &n) const {
-				//TODO
-				return move(add,-n);
-			}
-			// return th distance between two iterator,
-			// if these two iterators points to different vectors, throw invaild_iterator.
-			int operator-(const const_iterator &rhs) const {
-				//TODO
-				if(ori != rhs.ori) throw( invalid_iterator() );
-				return index(add) - index(rhs.add);
-			}
-			const_iterator operator+=(const int &n) {
-				//TODO
-				add = move(add, +n);
-				return *this;
-			}
-			const_iterator operator-=(const int &n) {
-				//TODO
-				add = move(add, -n);
-				return *this;
-			}
-			/**
-			 * TODO iter++
-			 */
-			const_iterator operator++(int)
-			{
-				if(add == data.END)throw(index_out_of_bound());
-				const_iterator re(*this);
-				add = add->next;
-				return re;
-			}
-			/**
-			 * TODO ++iter
-			 */
-			const_iterator& operator++()
-			{
-				if(add == data.END)throw(index_out_of_bound());
-				add = add->next;
-				return *this;
-			}
-			/**
-			 * TODO iter--
-			 */
-			const_iterator operator--(int)
-			{
-				if(add == data.BEGIN)throw(index_out_of_bound());
-				const_iterator re(*this);
-				add = add->pre;
-				return re;
-			}
-			/**
-			 * TODO --iter
-			 */
-			const_iterator& operator--()
-			{
-				if(add == data.BEGIN)throw(index_out_of_bound());
-				add = add->pre;
-				return *this;
-			}
-			/**
-			 * TODO *it
-			 */
-			const T& operator*() const
-			{ return add->data->first; }
-			/**
-			 * TODO it->field
-			 */
-			const T* operator->() const noexcept
-			{ return &(data->data->first); }
-			/**
-			 * a operator to check whether two iterators are same (pointing to the same memory).
-			 */
-			bool operator==(const citerator &rhs) const
-			{ return add == rhs.add; }
-			bool operator==(const const_iterator &rhs) const
-			{ return add == rhs.add; }
-			/**
-			 * some other operator for iterator.
-			 */
-			bool operator!=(const iterator &rhs) const
-			{ return add != rhs.add; }
-			bool operator!=(const const_iterator &rhs) const
-			{ return add != rhs.add; }
+		friend class deque;
+	private:
+		// data members.
+		const deque *ori;
+		const Node *add;
+		const_iterator( const deque* Origin, const Node *Address )
+		:ori(Origin),add(Address){}
+	public:
+		const_iterator()
+		:ori(NULL),add(NULL){}
+		const_iterator(const const_iterator &other)
+		:ori(other.ori),add(other.add){}
+		const_iterator(const iterator &other)
+		:ori(other.ori),add(other.add){}
+		// And other methods in iterator.
+		// And other methods in iterator.
+		// And other methods in iterator.
+		/**
+		 * return a new iterator which pointer n-next elements
+		 *   even if there are not enough elements, the behaviour is **undefined**.
+		 * as well as operator-
+		 */
+		const_iterator operator+(const int &n) const {
+			//TODO
+			return const_iterator(ori, ori->move(add,+n));
+		}
+		const_iterator operator-(const int &n) const {
+			//TODO
+			return const_iterator(ori, ori->move(add,-n));
+		}
+		// return th distance between two iterator,
+		// if these two iterators points to different vectors, throw invaild_iterator.
+		int operator-(const const_iterator &rhs) const {
+			//TODO
+			if(ori != rhs.ori) throw( invalid_iterator() );
+			return ori->index(add) - ori->index(rhs.add);
+		}
+		const_iterator operator+=(const int &n) {
+			//TODO
+			add = ori->move(add, +n);
+			return *this;
+		}
+		const_iterator operator-=(const int &n) {
+			//TODO
+			add = ori->move(add, -n);
+			return *this;
+		}
+		/**
+		 * TODO iter++
+		 */
+		const_iterator operator++(int)
+		{
+			if(add == ori->data.END)throw(index_out_of_bound());
+			const_iterator re(*this);
+			add = add->next;
+			return re;
+		}
+		/**
+		 * TODO ++iter
+		 */
+		const_iterator& operator++()
+		{
+			if(add == ori->data.END)throw(index_out_of_bound());
+			add = add->next;
+			return *this;
+		}
+		/**
+		 * TODO iter--
+		 */
+		const_iterator operator--(int)
+		{
+			if(add == ori->data.BEGIN)throw(index_out_of_bound());
+			const_iterator re(*this);
+			add = add->pre;
+			return re;
+		}
+		/**
+		 * TODO --iter
+		 */
+		const_iterator& operator--()
+		{
+			if(add == ori->data.BEGIN)throw(index_out_of_bound());
+			add = add->pre;
+			return *this;
+		}
+		/**
+		 * TODO *it
+		 */
+		const T& operator*() const
+		{ return add->data->first; }
+		/**
+		 * TODO it->field
+		 */
+		const T* operator->() const noexcept
+		{ return &(add->data->first); }
+		/**
+		 * a operator to check whether two iterators are same (pointing to the same memory).
+		 */
+		bool operator==(const iterator &rhs) const
+		{ return add == rhs.add; }
+		bool operator==(const const_iterator &rhs) const
+		{ return add == rhs.add; }
+		/**
+		 * some other operator for iterator.
+		 */
+		bool operator!=(const iterator &rhs) const
+		{ return add != rhs.add; }
+		bool operator!=(const const_iterator &rhs) const
+		{ return add != rhs.add; }
 	};
 	/**
 	 * TODO Constructors
@@ -444,7 +501,7 @@ public:
 	}
 	deque(const deque &other)
 	{
-		copy(other.BEGIN);
+		copy(other.data.BEGIN);
 		history = other.history;
 	}
 	/**
@@ -456,9 +513,9 @@ public:
 	 */
 	deque &operator=(const deque &other)
 	{
-		if(other == this) return *this;
+		if(&other == this) return *this;
 		data.clear();blocks.clear();
-		copy(other.BEGIN);
+		copy(other.data.BEGIN);
 		history = other.history;
 		return *this;
 	}
@@ -508,16 +565,16 @@ public:
 	 * returns an iterator to the beginning.
 	 */
 	iterator begin()
-	{ return iterator(this, data->BEGIN); }
+	{ return iterator(this, data.BEGIN); }
 	const_iterator cbegin() const
-	{ return const_iterator(this, data->BEGIN); }
+	{ return const_iterator(this, data.BEGIN); }
 	/**
 	 * returns an iterator to the end.
 	 */
 	iterator end()
-	{ return iterator(this, data->END); }
+	{ return iterator(this, data.END); }
 	const_iterator cend() const
-	{ return const_iterator(this, data->END); }
+	{ return const_iterator(this, data.END); }
 	/**
 	 * checks whether the container is empty.
 	 */
