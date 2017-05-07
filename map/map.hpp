@@ -195,23 +195,12 @@ public:
 			:ori(Origin),add(Address){}
 		public:
 			const_iterator()
-			{
-				// TODO
-				ori = NULL;
-				add = NULL;
-			}
+			:ori(NULL),add(NULL){}
 			const_iterator(const const_iterator &other)
-			{
-				// TODO
-				ori = other.ori;
-				add = other.add;
-			}
+			:ori(other.ori),add(other.add){}
 			const_iterator(const iterator &other)
-			{
-				// TODO
-				ori = other.ori;
-				add = other.add;
-			}
+			:ori(other.ori),add(other.add){}
+
 			// And other methods in iterator.
 			// And other methods in iterator.
 			// And other methods in iterator.
