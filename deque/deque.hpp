@@ -35,9 +35,15 @@ class list
 	size_t SIZE;
 	void clear(Node *l)
 	{
+		Node *r = l->pre;
 		SIZE=0;
-		for(;l!=END;l=l->next)
-			delete l;
+		for(;l!=END;)
+		{
+			l = l->next;
+			delete( l->pre );
+		}
+		r->next = END;
+		END->pre = r;
 	}
 	void clear(){clear(BEGIN);}
 	Node *insert(Node *l, const T &val)
@@ -46,7 +52,7 @@ class list
 		Node *r = new Node();
 		r->data = new T(val);
 		r->pre = l;r->next=l->next;
-		l->next=r;
+		l->next=r;r->next->pre = r;
 		return r;
 	}
 	void remove(Node *l)
@@ -90,7 +96,7 @@ class deque {
 	void balanced()
 	{
 		int sqn = sqrt(data.SIZE),opn = 0;
-		if(sqn < 10) sqn = 10;
+		if(sqn < 2) sqn = 2;
 		if( history < sqn )
 			return;
 		short ok = 1;
@@ -100,8 +106,9 @@ class deque {
 				{l=l->next;ok=0;continue;}
 			opn += sqn;
 			int cot = l->extra/2;
-			BNode *br = blocks.insert(l->pre, NULL);
+			BNode *br = blocks.insert( l->pre, *(l->data) );
 			br->extra = cot;
+			l->extra -= cot;
 			Node *r = *(l->data);
 			for(;cot;--cot,r=r->next)
 				r->data->second = br;
@@ -116,13 +123,16 @@ class deque {
 			{
 				l = l->next;
 				l->extra += l->pre->extra;
-				*(l->data) = *(l->pre->data);
-				for(Node *r = *(l->pre->data); r->data->second==l->pre; r=r->next)
-					r->data->second = l;
+				if( l->pre->data[0] ){
+					*(l->data) = *(l->pre->data);
+					for(Node *r = *(l->pre->data); r->data->second==l->pre; r=r->next)
+						r->data->second = l;
+				}
 				blocks.remove(l->pre);
 			}else{
 				l->extra += l->next->extra;
-				for(Node *r = *(l->next->data); r->data->second==l->next; r=r->next)
+				if( l->next->data[0] )
+				for(Node *r = *(l->next->data); r!=data.END && r->data->second==l->next; r=r->next)
 					r->data->second = l;
 				blocks.remove(l->next);
 			}
@@ -133,15 +143,19 @@ class deque {
 	Node *insert( Node *r, const T &val )
 	{
 		history++;
-		if(r->data==NULL)
+		if(empty())
 		{
 			r = data.insert(r->pre, Data(val, blocks.BEGIN));
 			*(blocks.BEGIN->data) = r;
 			blocks.BEGIN->extra = 1;
-		}else
-		{
-			((BNode*)(r->data->second))->extra++;
+		}else if( r == data.BEGIN ){
 			r = data.insert(r->pre, Data(val, r->data->second));
+			blocks.BEGIN->extra++;
+			*(blocks.BEGIN->data) = r;
+		}else{
+			r = r->pre;
+			((BNode*)(r->data->second))->extra++;
+			r = data.insert(r, Data(val, r->data->second));
 		}
 		balanced();
 		return r;
@@ -151,7 +165,9 @@ class deque {
 		BNode *br = (BNode*)(r->data->second);
 		history++;
 		if((--br->extra) == 0)
-			br->data = NULL;
+			br->data[0] = NULL;
+		else if( br->data[0] == r )
+			br->data[0] = r->next;
 		r=r->next;
 		data.remove(r->pre);
 		balanced();
@@ -159,6 +175,7 @@ class deque {
 	}
 	size_t index( const Node *r ) const
 	{
+		if( r == data.END ) return data.SIZE;
 		int cot=0;
 		BNode *br = (BNode*)(r->data->second);
 		while(*(br->data) != r)
@@ -171,6 +188,8 @@ class deque {
 	Node *move( Node *r, int step )
 	{
 		if(!step)return r;
+		if( !r->data && step<0 )
+			r=r->pre,step++;
 		BNode *br = (BNode*)(r->data->second);
 		void *vr = r->data->second;
 		if(step > 0)
@@ -179,17 +198,26 @@ class deque {
 			for(; step && vr == r->data->second; --step)
 				r = r->next;
 			br = br->next;
-			while( step >= br->extra )
+			if( br == blocks.END || !step ) return r;
+
+			while( br->extra>=0 && step >= br->extra )
 			{
 				step -= br->extra;
 				br = br->next;
 			}
+
+			if( br == blocks.END ) return data.END;
+
 			for(r=*(br->data);step; --step)
 				r = r->next;
 		}else{
+			//r == end
+			step=-step;
 			for(; step && vr == r->data->second; --step)
 				r = r->pre;
 			br = br->pre;
+			if( br == blocks.END || !step ) return r;
+
 			while( step >= br->extra )
 			{
 				step -= br->extra;
@@ -208,6 +236,8 @@ class deque {
 	const Node *move( const Node *r, int step ) const
 	{
 		if(!step)return r;
+		if( !r->data && step<0 )
+			r=r->pre,step++;
 		BNode *br = (BNode*)(r->data->second);
 		void *vr = r->data->second;
 		if(step > 0)
@@ -216,17 +246,26 @@ class deque {
 			for(; step && vr == r->data->second; --step)
 				r = r->next;
 			br = br->next;
-			while( step >= br->extra )
+			if( br == blocks.END || !step ) return r;
+
+			while( step && step >= br->extra )
 			{
 				step -= br->extra;
 				br = br->next;
 			}
+
+			if( br == blocks.END ) return data.END;
+
 			for(r=*(br->data);step; --step)
 				r = r->next;
 		}else{
+			//r == end
+			step=-step;
 			for(; step && vr == r->data->second; --step)
 				r = r->pre;
 			br = br->pre;
+			if( br == blocks.END || !step ) return r;
+
 			while( step >= br->extra )
 			{
 				step -= br->extra;
@@ -252,12 +291,13 @@ class deque {
 			if(er->data->second != vr)
 			{
 				br = blocks.insert( br, NULL );
-				br->extra = ((BNode*)(vr))->extra;
+				br->extra = ((BNode*)(er->data->second))->extra;
 			}
-			r = insert( data.END, er->data->first );
+			r = data.insert( data.END->pre, *er->data );
+			r->data->second = br;
 			if(er->data->second != vr)
 			{
-				r->data->second = br;
+				br->data[0] = r;
 				vr = er->data->second;
 			}
 		}
@@ -358,12 +398,18 @@ public:
 		 * TODO *it
 		 */
 		T& operator*() const
-		{ return add->data->first; }
+		{
+			if ( add == ori->data.END ) throw(invalid_iterator());
+			return add->data->first;
+		}
 		/**
 		 * TODO it->field
 		 */
 		T* operator->() const noexcept
-		{ return &(add->data->first); }
+		{
+			if ( add == ori->data.END ) throw(invalid_iterator());
+			return &(add->data->first);
+		}
 		/**
 		 * a operator to check whether two iterators are same (pointing to the same memory).
 		 */
@@ -471,12 +517,18 @@ public:
 		 * TODO *it
 		 */
 		const T& operator*() const
-		{ return add->data->first; }
+		{
+			if ( add == ori->data.END ) throw(invalid_iterator());
+			return add->data->first;
+		}
 		/**
 		 * TODO it->field
 		 */
 		const T* operator->() const noexcept
-		{ return &(add->data->first); }
+		{
+			if ( add == ori->data.END ) throw(invalid_iterator());
+			return &(add->data->first);
+		}
 		/**
 		 * a operator to check whether two iterators are same (pointing to the same memory).
 		 */
@@ -497,11 +549,15 @@ public:
 	 */
 	deque()
 	{
+		history = 0;
 		blocks.insert(blocks.BEGIN, NULL);
 	}
 	deque(const deque &other)
 	{
-		copy(other.data.BEGIN);
+		if(!other.empty())
+			copy(other.data.BEGIN);
+		else
+			blocks.insert(blocks.BEGIN, NULL);
 		history = other.history;
 	}
 	/**
@@ -515,7 +571,10 @@ public:
 	{
 		if(&other == this) return *this;
 		data.clear();blocks.clear();
-		copy(other.data.BEGIN);
+		if(!other.empty())
+			copy(other.data.BEGIN);
+		else
+			blocks.insert(blocks.BEGIN, NULL);
 		history = other.history;
 		return *this;
 	}
@@ -525,14 +584,14 @@ public:
 	 */
 	T & at(const size_t &pos)
 	{
-		if(pos > data.SIZE)throw( index_out_of_bound() );
+		if(pos >= data.SIZE || pos < 0)throw( index_out_of_bound() );
 		Node *r = move(data.BEGIN,pos);
 		return r->data->first;
 	}
 	const T & at(const size_t &pos) const
 	{
-		if(pos > data.SIZE)throw( index_out_of_bound() );
-		Node *r = move(data.BEGIN,pos);
+		if(pos >= data.SIZE || pos < 0)throw( index_out_of_bound() );
+		const Node *r = move(data.BEGIN,pos);
 		return r->data->first;
 	}
 	T & operator[](const size_t &pos)
