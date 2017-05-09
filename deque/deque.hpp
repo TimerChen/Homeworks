@@ -82,6 +82,22 @@ list<T>::Node::Node(const Node &other)
 	extra = other.extra;
 	data = new T(*other.data);
 }
+
+template<class T>
+class LastPos
+{
+public:
+	LastPos(){reset();}
+	int ind;
+	T *ptr;const T *ptr_c;
+	void reset()
+	{ ind=-1;ptr=NULL;ptr_c=NULL; }
+	void set( int Index, const T* a )
+	{ ind = Index; ptr_c = a; }
+	void set( int Index, T* a )
+	{ ind = Index; ptr   = a; }
+};
+
 template<class T>
 class deque {
 
@@ -92,7 +108,7 @@ class deque {
 	list<Node*>blocks;
 	list<Data> data;
 	int history;
-
+	LastPos<Node> *lastPos;
 	void balanced()
 	{
 		int sqn = sqrt(data.SIZE),opn = 0;
@@ -145,6 +161,7 @@ class deque {
 	}
 	Node *insert( Node *r, const T &val )
 	{
+		lastPos->reset();
 		history++;
 		if(empty())
 		{
@@ -165,6 +182,7 @@ class deque {
 	}
 	Node *remove( Node *r )
 	{
+		lastPos->reset();
 		BNode *br = (BNode*)(r->data->second);
 		history++;
 		if((--br->extra) == 0)
@@ -553,10 +571,12 @@ public:
 	deque()
 	{
 		history = 0;
+		lastPos = new LastPos<Node>();
 		blocks.insert(blocks.BEGIN, NULL);
 	}
 	deque(const deque &other)
 	{
+		lastPos = new LastPos<Node>();
 		if(!other.empty())
 			copy(other.data.BEGIN);
 		else
@@ -566,7 +586,7 @@ public:
 	/**
 	 * TODO Deconstructor
 	 */
-	~deque() {}
+	~deque() { delete lastPos; }
 	/**
 	 * TODO assignment operator
 	 */
@@ -574,6 +594,7 @@ public:
 	{
 		if(&other == this) return *this;
 		data.clear();blocks.clear();
+		lastPos->reset();
 		if(!other.empty())
 			copy(other.data.BEGIN);
 		else
@@ -588,13 +609,19 @@ public:
 	T & at(const size_t &pos)
 	{
 		if(pos >= data.SIZE || pos < 0)throw( index_out_of_bound() );
-		Node *r = move(data.BEGIN,pos);
+		Node *r;
+		if(lastPos->ind==-1)	r = move(data.BEGIN,pos);
+		else r = move( lastPos->ptr, pos - lastPos->ind );
+		lastPos->set( pos, r );
 		return r->data->first;
 	}
 	const T & at(const size_t &pos) const
 	{
 		if(pos >= data.SIZE || pos < 0)throw( index_out_of_bound() );
-		const Node *r = move(data.BEGIN,pos);
+		const Node *r;
+		if(lastPos->ind==-1)	r = move(data.BEGIN,pos);
+		else r = move( lastPos->ptr_c, pos - lastPos->ind );
+		lastPos->set( pos, r );
 		return r->data->first;
 	}
 	T & operator[](const size_t &pos)

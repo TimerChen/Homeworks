@@ -94,20 +94,28 @@ std::pair<bool, double> test() {
 int main()
 {
 	int i,j;
-	i = test().first;
+	/*i = test().first;
 	printf("%d\n",i);
-	return 0;
-	n = 6000;
+	return 0;*/
+	int *p;
+	const int *cp;
+	p = cp;
+	cp = p;
+	n = 1e6;
 	//freopen("out.txt","w",stdout);
+	for(i=1;i<=n;++i)
+		dui.push_back(i);
+	printf("1");
 	sjtu::deque<int> dui2(dui);
 	//dui.clear();
 	//dui2 = dui;
 	dui = dui2;
+	printf("2");
 	for(i=1;i<=n;++i)
 	{
-		dui.push_back(i);
+		dui[i-1];
 		//printf("%d\n",dui[i-1]);
 	}
-	print();
+	//print();
 	return 0;
 }
