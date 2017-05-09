@@ -96,12 +96,15 @@ class deque {
 	void balanced()
 	{
 		int sqn = sqrt(data.SIZE),opn = 0;
-		if(sqn < 2) sqn = 2;
+		if(sqn < 200) sqn = 200;
+		//const int SPLIT = 1.6, MERGE = 1.6;
+		const int SPLIT = 2.5, MERGE = 1.4;
+
 		if( history < sqn )
 			return;
 		short ok = 1;
 		for(BNode *l = blocks.BEGIN;l!=blocks.END && opn < sqn;)
-		if( l->extra > 2*sqn ){//split
+		if( l->extra > SPLIT*sqn ){//split
 			if(opn+sqn > sqn)
 				{l=l->next;ok=0;continue;}
 			opn += sqn;
@@ -114,7 +117,7 @@ class deque {
 				r->data->second = br;
 			*(l->data) = r;
 			l = l->next;
-		}else if( l->next != blocks.END && l->extra + l->next->extra <= sqn ){//merge
+		}else if( l->next != blocks.END && l->extra + l->next->extra <= sqn*MERGE ){//merge
 			int cot = min(l->extra,l->next->extra);
 			if( opn + cot > sqn )
 				{l=l->next;ok=0;continue;}

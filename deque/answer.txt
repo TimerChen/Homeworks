@@ -1,8 +1,10 @@
-test start:
-test1: push & pop                    Accept
-test2: at & [] & front & back        Accept
-test3: itetator operation            Accept
-test4: const_itetator operation      Accept
-test5: erase & insert                Accept
-test6: clear & copy & assignment     Accept
-test7: complexity                    Accept
+Testing push...                         Passed
+Testing pop...                          Passed
+Testing insert...                       Passed
+Testing iterator...                     Passed
+Testing erase...                        Passed
+Testing copy and clear...               Passed
+Testing memory...                       Passed
+Final test without mercy...             Passed
+
+Congratulations, your deque passed all the tests!
